@@ -1,12 +1,4 @@
-"""
-Solar PV Performance Monitoring and Reporting
----------------------------------------------
-Run on REAL data (Kaggle "Solar Power Generation Data", Plant 1 files):
-    python solar_pv_project.py --gen Plant_1_Generation_Data.csv --weather Plant_1_Weather_Sensor_Data.csv
-Run a DEMO on synthetic data (to test the code only, never report demo numbers as real results):
-    python solar_pv_project.py --demo
-Outputs go to ./output_solar/
-"""
+
 import argparse, os
 import numpy as np, pandas as pd
 import matplotlib
@@ -14,7 +6,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 FAULT_DAY_RATIO = 0.80      
-UNDERPERFORM_RATIO = 0.90   
+UNDERPERFORM_RATIO = 0.90   # inverter flagged if its mean daily yield is below 90% of the fleet median
+
 def load_demo(seed=2):
     rng = np.random.default_rng(seed)
     idx = pd.date_range("2020-05-15", periods=34 * 96, freq="15min")
@@ -87,7 +80,7 @@ def main():
     ax.set(title="AC power vs irradiation", xlabel="Irradiation", ylabel="AC power"); fig.tight_layout(); fig.savefig(f"{out}/power_vs_irradiation.png", dpi=130); plt.close(fig)
 
     u = inv[inv.underperforming]
-    
+    # Day-level check: inverter-days far below the same day's fleet median (outages, faults, shading)
     day["day_median"] = day.groupby("date").DAILY_YIELD.transform("median")
     fd = day[(day.DAILY_YIELD < FAULT_DAY_RATIO * day.day_median) & (day.day_median > 1000)].copy()
     fd["lost_kwh"] = fd.day_median - fd.DAILY_YIELD
